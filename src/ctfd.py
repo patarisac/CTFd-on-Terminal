@@ -10,6 +10,8 @@ class CTFd:
         self.s = requests.Session()
         self.nonce = None
         self.csrf = None
+        self.ctfname = None
+        self.username = None
 
     def get_nonce(self, target):
         resp = self.s.get(self.URL + target)
@@ -28,8 +30,12 @@ class CTFd:
         body = {"name": user, "password": passw, "_submit": "Submit", "nonce": self.nonce}
         r = self.s.post(self.URL + "login", data=body)
         self.csrf = re.findall("'csrfNonce': \"[a-z0-9]+\"", r.text)[0][14:-1]
+        self.ctfname = re.findall("<title>.*</title>", r.text)[0][7:-8]
         self.s.headers.update({"CSRF-Token": self.csrf})
-        return r.status_code
+        self.username = re.findall("'userName': .*,", r.text)[0]
+        if 'null' in self.username:
+            return False
+        return True
 
     def submit_flag(self, chall_id, flagz):
         body = {
